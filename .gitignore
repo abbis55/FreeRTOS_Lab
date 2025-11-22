@@ -1,0 +1,23 @@
+# Build/outputs
+Debug/
+Release/
+build/
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.su
+*.o
+*.d
+
+# IDE/metadata
+.settings/
+.metadata/
+.vscode/
+*.launch
+
+# CubeMX cache/backup
+*.ioc-backup
+*.uvguix.*
+*.uvoptx
