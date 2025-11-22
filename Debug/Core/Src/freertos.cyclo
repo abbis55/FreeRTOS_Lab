@@ -1,7 +1,0 @@
-../Core/Src/freertos.c:108:6:MX_FREERTOS_Init	1
-../Core/Src/freertos.c:162:6:StartDefaultTask	1
-../Core/Src/freertos.c:180:6:Blink1	1
-../Core/Src/freertos.c:209:6:Blink2	1
-../Core/Src/freertos.c:235:6:Trigg	1
-../Core/Src/freertos.c:261:6:Userbutton	2
-../Core/Src/freertos.c:284:6:wait_cycles	1
