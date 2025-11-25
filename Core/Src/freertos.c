@@ -22,6 +22,8 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -48,6 +50,9 @@
 uint8_t varBlink1 = 0;
 uint8_t varBlink2 = 0;
 uint8_t varBlink3 = 0;
+
+SemaphoreHandle_t xButtonSemaphore = NULL;
+
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -85,6 +90,13 @@ const osThreadAttr_t UserbuttonTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
+/* Definitions for LedTask */
+osThreadId_t LedTaskHandle;
+const osThreadAttr_t LedTask_attributes = {
+  .name = "LedTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -97,6 +109,7 @@ void Blink1(void *argument);
 void Blink2(void *argument);
 void Trigg(void *argument);
 void Userbutton(void *argument);
+void LedTaskEntry(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -115,7 +128,10 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+	xButtonSemaphore = xSemaphoreCreateBinary();
+	configASSERT(xButtonSemaphore);
+	/* USER CODE END RTOS_SEMAPHORES */
+
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -141,6 +157,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of UserbuttonTask */
   UserbuttonTaskHandle = osThreadNew(Userbutton, NULL, &UserbuttonTask_attributes);
+
+  /* creation of LedTask */
+  LedTaskHandle = osThreadNew(LedTaskEntry, NULL, &LedTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -209,6 +228,7 @@ void Blink1(void *argument)
 void Blink2(void *argument)
 {
   /* USER CODE BEGIN Blink2 */
+
     TickType_t xLastWakeTime;
     const TickType_t xPeriod = pdMS_TO_TICKS(20); // 20 ms period
 
@@ -260,24 +280,52 @@ void Trigg(void *argument)
 /* USER CODE END Header_Userbutton */
 void Userbutton(void *argument)
 {
-/* USER CODE BEGIN Userbutton */
-TickType_t xLastWakeTime;
-const TickType_t xPeriod = pdMS_TO_TICKS(20);
-// Initialise the xLastWakeTime variable with the current time.
-xLastWakeTime = xTaskGetTickCount();
-/* Infinite loop */
-for(;;)
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  const TickType_t xPeriod = pdMS_TO_TICKS(20); // kolla knappen var 20 ms
+
+  for(;;)
+  {
+    if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) {
+      // Knappen nedtryckt → signalera
+      xSemaphoreGive(xButtonSemaphore);
+
+      // (valfritt) markera i SWV om du vill se blå puls i Task 2:
+      // varBlink3 = 1;
+      // wait_cycles(250000); // ~3 ms jobb (om du vill simulera arbete)
+      // varBlink3 = 0;
+    }
+
+    vTaskDelayUntil(&xLastWakeTime, xPeriod);
+  }
+}
+
+
+/* USER CODE BEGIN Header_LedTaskEntry */
+/**
+* @brief Function implementing the LedTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_LedTaskEntry */
+void LedTaskEntry(void *argument)
 {
-if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin)==GPIO_PIN_RESET)
-{
-varBlink3 = 1;
-wait_cycles(250000);
-varBlink3 = 0;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  const TickType_t xPeriod = pdMS_TO_TICKS(100); // 100 ms blink
+
+  for(;;)
+  {
+    // Om semaforen gavs nyligen (knappen nedtryckt) → hoppa över toggle denna period
+    if (xSemaphoreTake(xButtonSemaphore, 0) == pdTRUE) {
+    	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET); // LED av
+      vTaskDelayUntil(&xLastWakeTime, xPeriod);
+      continue; // tillbaka till början av loopen
+    }
+
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    vTaskDelayUntil(&xLastWakeTime, xPeriod);
+  }
 }
-vTaskDelayUntil( &xLastWakeTime, xPeriod );
-}
-/* USER CODE END Userbutton */
-}
+
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
