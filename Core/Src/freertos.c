@@ -150,16 +150,16 @@ void MX_FREERTOS_Init(void) {
   Blink1TaskHandle = osThreadNew(Blink1, NULL, &Blink1Task_attributes);
 
   /* creation of Blink2Task */
-  Blink2TaskHandle = osThreadNew(Blink2, NULL, &Blink2Task_attributes);
+  //Blink2TaskHandle = osThreadNew(Blink2, NULL, &Blink2Task_attributes);
 
   /* creation of TriggTask */
-  TriggTaskHandle = osThreadNew(Trigg, NULL, &TriggTask_attributes);
+  //TriggTaskHandle = osThreadNew(Trigg, NULL, &TriggTask_attributes);
 
   /* creation of UserbuttonTask */
   UserbuttonTaskHandle = osThreadNew(Userbutton, NULL, &UserbuttonTask_attributes);
 
   /* creation of LedTask */
-  LedTaskHandle = osThreadNew(LedTaskEntry, NULL, &LedTask_attributes);
+  //LedTaskHandle = osThreadNew(LedTaskEntry, NULL, &LedTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -198,25 +198,27 @@ void StartDefaultTask(void *argument)
 /* USER CODE END Header_Blink1 */
 void Blink1(void *argument)
 {
-  /* USER CODE BEGIN Blink1 */
-    TickType_t xLastWakeTime;
-    const TickType_t xPeriod = pdMS_TO_TICKS(10); // 10 ms period
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  const TickType_t xPeriod = pdMS_TO_TICKS(100); // 100 ms blink
 
-    // Initiera xLastWakeTime med nuvarande tid (OS-ticks)
-    xLastWakeTime = xTaskGetTickCount();
-
-    /* Infinite loop */
-    for(;;)
-    {
-        varBlink1 = 1;
-        wait_cycles(200000);   // simulera arbete
-        varBlink1 = 0;
-
-        // Vänta tills det är dags för NÄSTA period
-        vTaskDelayUntil(&xLastWakeTime, xPeriod);
+  for(;;)
+  {
+    // Om Userbutton gav semafor sedan sist (knappen nedtryckt),
+    // skippa blink (håll LED av) denna period
+    if (xSemaphoreTake(xButtonSemaphore, 0) == pdTRUE) {
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET); // LED off
+      vTaskDelayUntil(&xLastWakeTime, xPeriod);
+      continue;
     }
-  /* USER CODE END Blink1 */
+
+    // Annars: toggla LED normalt var 100 ms
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    vTaskDelayUntil(&xLastWakeTime, xPeriod);
+  }
 }
+
+  /* USER CODE END Blink1 */
+
 
 /* USER CODE BEGIN Header_Blink2 */
 /**
@@ -307,6 +309,7 @@ void Userbutton(void *argument)
 * @retval None
 */
 /* USER CODE END Header_LedTaskEntry */
+/*
 void LedTaskEntry(void *argument)
 {
   TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -325,7 +328,7 @@ void LedTaskEntry(void *argument)
     vTaskDelayUntil(&xLastWakeTime, xPeriod);
   }
 }
-
+*/
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
