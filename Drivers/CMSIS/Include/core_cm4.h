@@ -1685,7 +1685,7 @@ __STATIC_INLINE void __NVIC_EnableIRQ(IRQn_Type IRQn)
     __COMPILER_BARRIER();
   }
 }
-//hej
+
 
 /**
   \brief   Get Interrupt Enable status

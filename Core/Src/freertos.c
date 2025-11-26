@@ -268,7 +268,7 @@ void Trigg(void *argument)
 	  for(;;)
 	  {
 	    vTaskDelayUntil(&xLastWakeTime, xPeriod);
-	    wait_cycles(10); // här ska du lägga breakpoint sen
+	    wait_cycles(10); // här ska du lägga breakpoint sen. hej
 	  }
   /* USER CODE END Trigg */
 }
